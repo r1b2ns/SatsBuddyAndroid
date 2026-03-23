@@ -1,11 +1,9 @@
 package com.satsbuddy.presentation.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.satsbuddy.presentation.carddetail.CardDetailScreen
 import com.satsbuddy.presentation.cardlist.CardListScreen
 import com.satsbuddy.presentation.receive.ReceiveScreen
@@ -19,75 +17,54 @@ fun SatsBuddyNavHost() {
 
     NavHost(
         navController = navController,
-        startDestination = Screen.CardList.route
+        startDestination = Screen.CardList
     ) {
-        composable(Screen.CardList.route) {
+        composable<Screen.CardList> {
             CardListScreen(
                 onCardClick = { cardIdentifier ->
-                    navController.navigate(Screen.CardDetail.createRoute(cardIdentifier))
+                    navController.navigate(Screen.CardDetail(cardIdentifier))
                 }
             )
         }
 
-        composable(
-            route = Screen.CardDetail.route,
-            arguments = listOf(navArgument("cardIdentifier") { type = NavType.StringType })
-        ) {
+        composable<Screen.CardDetail> {
             CardDetailScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToSlotList = { cardId ->
-                    navController.navigate(Screen.SlotList.createRoute(cardId))
+                    navController.navigate(Screen.SlotList(cardId))
                 },
                 onNavigateToReceive = { address ->
-                    navController.navigate(Screen.Receive.createRoute(address))
+                    navController.navigate(Screen.Receive(address))
                 },
                 onNavigateToSend = { cardId, slotNumber ->
-                    navController.navigate(Screen.SendFlow.createRoute(cardId, slotNumber))
+                    navController.navigate(Screen.SendFlow(cardId, slotNumber))
                 }
             )
         }
 
-        composable(
-            route = Screen.SlotList.route,
-            arguments = listOf(navArgument("cardIdentifier") { type = NavType.StringType })
-        ) {
+        composable<Screen.SlotList> {
             SlotListScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onSlotClick = { cardId, slotNumber ->
-                    navController.navigate(Screen.SlotHistory.createRoute(cardId, slotNumber))
+                    navController.navigate(Screen.SlotHistory(cardId, slotNumber))
                 }
             )
         }
 
-        composable(
-            route = Screen.SlotHistory.route,
-            arguments = listOf(
-                navArgument("cardIdentifier") { type = NavType.StringType },
-                navArgument("slotNumber") { type = NavType.IntType }
-            )
-        ) {
+        composable<Screen.SlotHistory> {
             SlotHistoryScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToSend = { cardId, slotNumber ->
-                    navController.navigate(Screen.SendFlow.createRoute(cardId, slotNumber))
+                    navController.navigate(Screen.SendFlow(cardId, slotNumber))
                 }
             )
         }
 
-        composable(
-            route = Screen.Receive.route,
-            arguments = listOf(navArgument("address") { type = NavType.StringType })
-        ) {
+        composable<Screen.Receive> {
             ReceiveScreen(onNavigateBack = { navController.popBackStack() })
         }
 
-        composable(
-            route = Screen.SendFlow.route,
-            arguments = listOf(
-                navArgument("cardIdentifier") { type = NavType.StringType },
-                navArgument("slotNumber") { type = NavType.IntType }
-            )
-        ) {
+        composable<Screen.SendFlow> {
             SendFlowScreen(onNavigateBack = { navController.popBackStack() })
         }
     }

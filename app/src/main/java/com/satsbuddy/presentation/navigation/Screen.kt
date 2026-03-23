@@ -1,27 +1,24 @@
 package com.satsbuddy.presentation.navigation
 
-sealed class Screen(val route: String) {
-    data object CardList : Screen("card_list")
+import kotlinx.serialization.Serializable
 
-    data object CardDetail : Screen("card_detail/{cardIdentifier}") {
-        fun createRoute(cardIdentifier: String) = "card_detail/$cardIdentifier"
-    }
+sealed interface Screen {
 
-    data object SlotList : Screen("slot_list/{cardIdentifier}") {
-        fun createRoute(cardIdentifier: String) = "slot_list/$cardIdentifier"
-    }
+    @Serializable
+    data object CardList : Screen
 
-    data object SlotHistory : Screen("slot_history/{cardIdentifier}/{slotNumber}") {
-        fun createRoute(cardIdentifier: String, slotNumber: Int) =
-            "slot_history/$cardIdentifier/$slotNumber"
-    }
+    @Serializable
+    data class CardDetail(val cardIdentifier: String) : Screen
 
-    data object Receive : Screen("receive/{address}") {
-        fun createRoute(address: String) = "receive/$address"
-    }
+    @Serializable
+    data class SlotList(val cardIdentifier: String) : Screen
 
-    data object SendFlow : Screen("send_flow/{cardIdentifier}/{slotNumber}") {
-        fun createRoute(cardIdentifier: String, slotNumber: Int) =
-            "send_flow/$cardIdentifier/$slotNumber"
-    }
+    @Serializable
+    data class SlotHistory(val cardIdentifier: String, val slotNumber: Int) : Screen
+
+    @Serializable
+    data class Receive(val address: String) : Screen
+
+    @Serializable
+    data class SendFlow(val cardIdentifier: String, val slotNumber: Int) : Screen
 }
