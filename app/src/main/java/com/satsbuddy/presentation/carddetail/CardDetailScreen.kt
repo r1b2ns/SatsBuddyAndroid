@@ -1,0 +1,201 @@
+package com.satsbuddy.presentation.carddetail
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.satsbuddy.domain.model.BalanceDisplayFormat
+import com.satsbuddy.domain.model.SlotInfo
+import com.satsbuddy.presentation.common.BalanceText
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CardDetailScreen(
+    onNavigateBack: () -> Unit,
+    onNavigateToSlotList: (String) -> Unit,
+    onNavigateToReceive: (String) -> Unit,
+    onNavigateToSend: (String, Int) -> Unit,
+    viewModel: CardDetailViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    var balanceFormat by rememberSaveable { mutableStateOf(BalanceDisplayFormat.SATS) }
+    val clipboardManager = LocalClipboardManager.current
+
+    val activeSlot = uiState.slots.firstOrNull { it.isActive }
+    val displayAddress = activeSlot?.address
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(viewModel.cardIdentifier.take(12) + "...") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(Modifier.height(24.dp))
+
+            if (uiState.isLoading) {
+                CircularProgressIndicator()
+                Spacer(Modifier.height(16.dp))
+            }
+
+            activeSlot?.let { slot ->
+                BalanceText(
+                    satAmount = slot.balance ?: 0,
+                    format = balanceFormat,
+                    price = null,
+                    onFormatToggle = { balanceFormat = balanceFormat.next() }
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
+            uiState.errorMessage?.let { error ->
+                Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                Spacer(Modifier.height(8.dp))
+            }
+
+            if (activeSlot != null && (activeSlot.balance ?: 0) > 0 && displayAddress != null) {
+                Button(
+                    onClick = { onNavigateToSend(viewModel.cardIdentifier, activeSlot.slotNumber) },
+                    modifier = Modifier.padding(vertical = 8.dp)
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
+                    Text("  Sweep Balance")
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            // Receive Row
+            if (displayAddress != null) {
+                DetailRow(
+                    label = "Receive",
+                    icon = { Icon(Icons.Default.QrCode, contentDescription = "Receive") },
+                    onClick = { onNavigateToReceive(displayAddress) }
+                )
+                HorizontalDivider()
+            }
+
+            // Card ID Row
+            DetailRow(
+                label = "Card ID",
+                subtitle = viewModel.cardIdentifier.take(20) + "...",
+                icon = { Icon(Icons.Default.ContentCopy, contentDescription = "Copy") },
+                onClick = { clipboardManager.setText(AnnotatedString(viewModel.cardIdentifier)) }
+            )
+            HorizontalDivider()
+
+            // Slot Navigation Row
+            activeSlot?.let { slot ->
+                val totalSlots = uiState.slots.size
+                DetailRow(
+                    label = "Slot ${slot.displaySlotNumber} of $totalSlots",
+                    icon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "View Slots") },
+                    onClick = { onNavigateToSlotList(viewModel.cardIdentifier) }
+                )
+                HorizontalDivider()
+            }
+
+            // Refresh Row
+            DetailRow(
+                label = "Refresh",
+                icon = { Icon(Icons.Default.Refresh, contentDescription = "Refresh") },
+                onClick = { /* trigger refresh */ }
+            )
+
+            Spacer(Modifier.height(32.dp))
+
+            // Footer
+            Text(
+                "SatsBuddy v1.0.0",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun DetailRow(
+    label: String,
+    subtitle: String? = null,
+    icon: @Composable () -> Unit,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp)
+            .then(
+                Modifier.let {
+                    @Suppress("DEPRECATION")
+                    it
+                }
+            ),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            subtitle?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        IconButton(onClick = onClick) { icon() }
+    }
+}
