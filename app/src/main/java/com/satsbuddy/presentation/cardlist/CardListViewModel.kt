@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.satsbuddy.data.nfc.NfcSessionManager
 import com.satsbuddy.domain.model.SatsCardInfo
+import com.satsbuddy.domain.repository.UserPreferencesRepository
 import com.satsbuddy.domain.usecase.GetPriceUseCase
 import com.satsbuddy.domain.usecase.LoadCardsUseCase
 import com.satsbuddy.domain.usecase.ReadCardInfoUseCase
@@ -24,7 +25,8 @@ class CardListViewModel @Inject constructor(
     private val saveCards: SaveCardsUseCase,
     private val upsertCard: UpsertCardUseCase,
     private val getPrice: GetPriceUseCase,
-    private val nfcSessionManager: NfcSessionManager
+    private val nfcSessionManager: NfcSessionManager,
+    private val userPreferences: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CardListUiState())
@@ -34,6 +36,15 @@ class CardListViewModel @Inject constructor(
         loadPersistedCards()
         refreshPrice()
         observeNfcTags()
+        observeSwipeTip()
+    }
+
+    private fun observeSwipeTip() {
+        viewModelScope.launch {
+            userPreferences.swipeToDeleteTipDismissed.collect { dismissed ->
+                _uiState.update { it.copy(showSwipeToDeleteTip = !dismissed) }
+            }
+        }
     }
 
     private fun loadPersistedCards() {
@@ -85,8 +96,25 @@ class CardListViewModel @Inject constructor(
 
     fun removeCard(card: SatsCardInfo) {
         val updated = _uiState.value.cards.filter { it.cardIdentifier != card.cardIdentifier }
-        _uiState.update { it.copy(cards = updated) }
+        _uiState.update { it.copy(cards = updated, cardPendingDeletion = null) }
         viewModelScope.launch { saveCards(updated) }
+    }
+
+    fun requestCardDeletion(card: SatsCardInfo) {
+        _uiState.update { it.copy(cardPendingDeletion = card) }
+    }
+
+    fun cancelCardDeletion() {
+        _uiState.update { it.copy(cardPendingDeletion = null) }
+    }
+
+    fun confirmCardDeletion() {
+        _uiState.value.cardPendingDeletion?.let { removeCard(it) }
+    }
+
+    fun dismissSwipeToDeleteTip() {
+        _uiState.update { it.copy(showSwipeToDeleteTip = false) }
+        viewModelScope.launch { userPreferences.setSwipeToDeleteTipDismissed(true) }
     }
 
     fun updateLabel(card: SatsCardInfo, newLabel: String) {
