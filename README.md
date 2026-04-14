@@ -92,6 +92,46 @@ app/src/main/java/com/satsbuddy/
 
 ---
 
+## Building `cktap-android` (manual step, for now)
+
+The `cktap-android` library (Kotlin bindings for [rust-cktap](https://github.com/coinkite/rust-cktap)) is **not yet published to a Maven repository**, so it must be built locally before the app can compile.
+
+### Prerequisites
+
+- [Rust toolchain](https://rustup.rs/) (`cargo`, `rustup`)
+- Android NDK (installed via Android Studio → SDK Manager → SDK Tools → NDK)
+- The [rust-cktap](https://github.com/coinkite/rust-cktap) repository cloned as a sibling of this project:
+
+```
+parent/
+├── SatsBuddyAndroid/
+└── rust-cktap/
+```
+
+### Steps
+
+1. Export the NDK path (adjust the version to match what you have installed):
+   ```bash
+   export ANDROID_NDK_ROOT=~/Library/Android/sdk/ndk/27.2.12479018
+   ```
+2. Build the native library and generate the Kotlin bindings:
+   ```bash
+   cd ../rust-cktap/cktap-android
+   bash scripts/dev/build-dev-macos-aarch64.sh
+   ```
+   This compiles `libcktap_ffi.so` for `arm64-v8a` and generates `lib/src/main/kotlin/com/coinkite/cktap/cktap_ffi.kt` via UniFFI.
+3. Build SatsBuddy normally:
+   ```bash
+   cd ../../SatsBuddyAndroid
+   ./gradlew :app:assembleDebug
+   ```
+
+The `cktap-android` module is wired as a Gradle sibling project (see `settings.gradle.kts`), so rebuilding it locally is enough — no extra publish step is required.
+
+> Future work: publish `cktap-android` to a Maven repository so this manual step can be removed.
+
+---
+
 ## Related
 
 - [SatsBuddy iOS](https://github.com/reez/SatsBuddy) — original iOS app by @reez

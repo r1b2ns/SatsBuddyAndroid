@@ -16,3 +16,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "SatsBuddy"
 include(":app")
+
+include(":cktap-android")
+project(":cktap-android").projectDir = file("../rust-cktap/cktap-android/lib")

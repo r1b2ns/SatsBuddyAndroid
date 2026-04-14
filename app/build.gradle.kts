@@ -99,6 +99,9 @@ dependencies {
     // Core
     implementation("androidx.core:core-ktx:1.15.0")
 
+    // Coinkite Tap Protocol (UniFFI bindings + native Rust lib)
+    implementation(project(":cktap-android"))
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
