@@ -9,5 +9,7 @@ data class CardListUiState(
     val statusMessage: String = "",
     val price: Price? = null,
     val errorMessage: String? = null,
-    val detailLoadingCardIdentifier: String? = null
+    val detailLoadingCardIdentifier: String? = null,
+    val showSwipeToDeleteTip: Boolean = false,
+    val cardPendingDeletion: SatsCardInfo? = null
 )

@@ -7,6 +7,7 @@ import com.satsbuddy.data.repository.FeeRepositoryImpl
 import com.satsbuddy.data.repository.PriceRepositoryImpl
 import com.satsbuddy.data.repository.PsbtRepositoryImpl
 import com.satsbuddy.data.repository.TransactionRepositoryImpl
+import com.satsbuddy.data.repository.UserPreferencesRepositoryImpl
 import com.satsbuddy.domain.repository.BalanceRepository
 import com.satsbuddy.domain.repository.CardRepository
 import com.satsbuddy.domain.repository.CardStorageRepository
@@ -14,6 +15,7 @@ import com.satsbuddy.domain.repository.FeeRepository
 import com.satsbuddy.domain.repository.PriceRepository
 import com.satsbuddy.domain.repository.PsbtRepository
 import com.satsbuddy.domain.repository.TransactionRepository
+import com.satsbuddy.domain.repository.UserPreferencesRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -44,4 +46,9 @@ abstract class RepositoryModule {
 
     @Binds @Singleton
     abstract fun bindPsbtRepository(impl: PsbtRepositoryImpl): PsbtRepository
+
+    @Binds @Singleton
+    abstract fun bindUserPreferencesRepository(
+        impl: UserPreferencesRepositoryImpl
+    ): UserPreferencesRepository
 }

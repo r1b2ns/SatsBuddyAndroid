@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.dataStoreFile
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStoreFile
 import com.google.crypto.tink.Aead
 import com.google.crypto.tink.KeyTemplates
 import com.google.crypto.tink.aead.AeadConfig
@@ -41,5 +44,13 @@ object StorageModule {
     ): DataStore<String> = DataStoreFactory.create(
         serializer = CardsDataSerializer(aead),
         produceFile = { context.dataStoreFile("satsbuddy_cards.pb") }
+    )
+
+    @Provides
+    @Singleton
+    fun provideUserPreferencesDataStore(
+        @ApplicationContext context: Context
+    ): DataStore<Preferences> = PreferenceDataStoreFactory.create(
+        produceFile = { context.preferencesDataStoreFile("satsbuddy_user_prefs") }
     )
 }
