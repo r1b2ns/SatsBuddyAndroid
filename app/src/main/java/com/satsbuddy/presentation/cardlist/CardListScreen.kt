@@ -1,6 +1,5 @@
 package com.satsbuddy.presentation.cardlist
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Contactless
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.SwipeLeft
@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.satsbuddy.domain.model.SatsCardInfo
+import com.satsbuddy.presentation.common.AppBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -125,16 +126,17 @@ fun CardListScreen(
                 }
             }
 
-            AnimatedVisibility(
-                visible = uiState.isScanning,
-                modifier = Modifier.align(Alignment.Center)
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator()
-                    Spacer(Modifier.height(16.dp))
-                    Text(uiState.statusMessage, style = MaterialTheme.typography.bodyMedium)
-                }
-            }
+        }
+
+        if (uiState.isScanning) {
+            AppBottomSheet(
+                image = Icons.Default.Contactless,
+                title = "Wait",
+                subtitle = "Hold phone near SATSCARD",
+                titlePrimaryButton = "Cancel",
+                primaryButtonAction = { viewModel.cancelScan() },
+                onDismissRequest = { viewModel.cancelScan() }
+            )
         }
 
         uiState.cardPendingDeletion?.let { card ->
