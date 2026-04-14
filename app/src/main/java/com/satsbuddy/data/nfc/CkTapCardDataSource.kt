@@ -2,6 +2,16 @@ package com.satsbuddy.data.nfc
 
 import android.nfc.Tag
 import android.nfc.tech.IsoDep
+import com.coinkite.cktap.CardException
+import com.coinkite.cktap.CkTapCard
+import com.coinkite.cktap.CkTapException
+import com.coinkite.cktap.DumpException
+import com.coinkite.cktap.SatsCard
+import com.coinkite.cktap.SatsCardStatus
+import com.coinkite.cktap.SignPsbtException
+import com.coinkite.cktap.StatusException
+import com.coinkite.cktap.UnsealException
+import com.coinkite.cktap.toCktap
 import com.satsbuddy.domain.model.AppError
 import com.satsbuddy.domain.model.SatsCardInfo
 import com.satsbuddy.domain.model.SlotInfo
@@ -11,90 +21,157 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Data source for SATSCARD NFC operations via rust-cktap JNI bindings.
+ * Data source for SATSCARD NFC operations, backed by the rust-cktap
+ * UniFFI bindings exposed through the `:cktap-android` Gradle module.
  *
- * The actual JNI integration requires the rust-cktap .aar library to be added
- * as a dependency. This implementation provides the full architecture and
- * placeholder calls that will be replaced with actual JNI invocations.
- *
- * JNI method signatures will follow the UniFFI-generated bindings pattern.
+ * Every public operation opens a fresh [AndroidNfcTransport] bound to the
+ * given NFC [Tag], drives the protocol via [toCktap], and releases both the
+ * transport and the native card handle when it is done.
  */
 @Singleton
 class CkTapCardDataSource @Inject constructor() {
 
-    companion object {
-        // Load the native library when available
-        // static { System.loadLibrary("cktap") }
-    }
-
     suspend fun readCard(tag: Tag): SatsCardInfo = withContext(Dispatchers.IO) {
-        val isoDep = IsoDep.get(tag)
-            ?: throw AppError.TransportError("Card does not support ISO-DEP")
-
-        val transport = AndroidNfcTransport(isoDep)
-        try {
-            // TODO: Replace with actual rust-cktap JNI call:
-            // val card = CkTapCard.fromTransport(transport)
-            // return card.status().toSatsCardInfo()
-            readCardStub(transport)
-        } finally {
-            transport.close()
+        withSatsCard(tag) { card ->
+            card.toSatsCardInfo()
         }
     }
 
     suspend fun setupNextSlot(tag: Tag, cvc: String, expectedId: String): SatsCardInfo =
         withContext(Dispatchers.IO) {
-            val isoDep = IsoDep.get(tag)
-                ?: throw AppError.TransportError("Card does not support ISO-DEP")
+            withSatsCard(tag) { card ->
+                val currentStatus = card.status()
+                if (expectedId.isNotEmpty() && currentStatus.cardIdent != expectedId) {
+                    throw AppError.WrongCard
+                }
+                if ((currentStatus.numSlots - currentStatus.activeSlot).toInt() <= 1) {
+                    throw AppError.NoUnusedSlots
+                }
 
-            val transport = AndroidNfcTransport(isoDep)
-            try {
-                // TODO: Replace with actual rust-cktap JNI call:
-                // val card = CkTapCard.fromTransport(transport)
-                // card.unseal(cvc) or card.new_slot(cvc)
-                // return card.status().toSatsCardInfo()
-                throw AppError.Generic("rust-cktap JNI not yet integrated")
-            } finally {
-                transport.close()
+                // Unseal the currently active slot; the card auto-advances to
+                // the next slot, which may require `newSlot` to activate.
+                try {
+                    card.unseal(cvc)
+                } catch (e: UnsealException) {
+                    throw e.toAppError()
+                }
+
+                runCatching { card.newSlot(cvc) }
+
+                card.toSatsCardInfo()
             }
         }
 
     suspend fun signPsbt(tag: Tag, slot: Int, psbt: String, cvc: String): String =
         withContext(Dispatchers.IO) {
-            val isoDep = IsoDep.get(tag)
-                ?: throw AppError.TransportError("Card does not support ISO-DEP")
-
-            val transport = AndroidNfcTransport(isoDep)
-            try {
-                // TODO: Replace with actual rust-cktap JNI call:
-                // val card = CkTapCard.fromTransport(transport)
-                // return card.sign_psbt(psbt, cvc, slot)
-                throw AppError.Generic("rust-cktap JNI not yet integrated")
-            } finally {
-                transport.close()
+            withSatsCard(tag) { card ->
+                try {
+                    card.signPsbt(slot.toUByte(), psbt, cvc)
+                } catch (e: SignPsbtException) {
+                    throw e.toAppError()
+                }
             }
         }
 
-    // Stub for development/testing without real hardware
-    private fun readCardStub(transport: AndroidNfcTransport): SatsCardInfo {
-        // Select SATSCARD AID: A000000458415453434152440001
-        val selectApdu = byteArrayOf(
-            0x00.toByte(), 0xA4.toByte(), 0x04.toByte(), 0x00.toByte(),
-            0x0E.toByte(),
-            0xA0.toByte(), 0x00.toByte(), 0x00.toByte(), 0x04.toByte(),
-            0x58.toByte(), 0x41.toByte(), 0x54.toByte(), 0x53.toByte(),
-            0x43.toByte(), 0x41.toByte(), 0x52.toByte(), 0x44.toByte(),
-            0x00.toByte(), 0x01.toByte()
-        )
-        val response = transport.transmitApdu(selectApdu)
-        // Parse CBOR response — requires cbor library or manual parsing
-        // For now return a minimal placeholder
+    // region Internal helpers
+
+    private suspend inline fun <R> withSatsCard(tag: Tag, block: (SatsCard) -> R): R {
+        val isoDep = IsoDep.get(tag)
+            ?: throw AppError.TransportError("Card does not support ISO-DEP")
+
+        val transport = AndroidNfcTransport(isoDep)
+        try {
+            val ckTapCard = try {
+                toCktap(transport)
+            } catch (e: Exception) {
+                throw e.toAppError()
+            }
+
+            try {
+                val satsCard = when (ckTapCard) {
+                    is CkTapCard.SatsCard -> ckTapCard.v1
+                    is CkTapCard.TapSigner, is CkTapCard.SatsChip ->
+                        throw AppError.WrongCard
+                }
+                return block(satsCard)
+            } finally {
+                runCatching { ckTapCard.destroy() }
+            }
+        } finally {
+            transport.close()
+        }
+    }
+
+    private suspend fun SatsCard.toSatsCardInfo(): SatsCardInfo {
+        val status = status()
+        val slots = buildSlotList(this, status)
         return SatsCardInfo(
-            version = "0.9",
-            pubkey = response.toHex(),
-            isActive = true
+            version = status.ver,
+            birth = status.birth.toLong(),
+            address = status.addr,
+            pubkey = status.pubkey,
+            cardIdent = status.cardIdent,
+            activeSlot = status.activeSlot.toInt(),
+            totalSlots = status.numSlots.toInt(),
+            isActive = status.addr != null,
+            slots = slots,
         )
     }
 
-    private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
+    private suspend fun buildSlotList(
+        card: SatsCard,
+        status: SatsCardStatus,
+    ): List<SlotInfo> {
+        val total = status.numSlots.toInt()
+        val active = status.activeSlot.toInt()
+        return (0 until total).map { index ->
+            val isActive = index == active
+            val isUsed = index < active
+            val pubkey: String?
+            val descriptor: String?
+            val address: String?
+            when {
+                isActive -> {
+                    pubkey = status.pubkey
+                    descriptor = null
+                    address = status.addr
+                }
+                isUsed -> {
+                    val dump = runCatching { card.dump(index.toUByte(), null) }.getOrNull()
+                    pubkey = dump?.pubkey
+                    descriptor = dump?.pubkeyDescriptor
+                    address = null
+                }
+                else -> {
+                    pubkey = null
+                    descriptor = null
+                    address = null
+                }
+            }
+            SlotInfo(
+                slotNumber = index,
+                isActive = isActive,
+                isUsed = isUsed,
+                pubkey = pubkey,
+                pubkeyDescriptor = descriptor,
+                address = address,
+            )
+        }
+    }
+
+    // endregion
+}
+
+private fun Throwable.toAppError(): AppError = when (this) {
+    is AppError -> this
+    is StatusException.CkTap -> err.toAppError()
+    is UnsealException.CkTap -> err.toAppError()
+    is SignPsbtException.CkTap -> err.toAppError()
+    is CkTapException.Card -> err.toAppError()
+    is CkTapException.Transport -> AppError.TransportError(msg)
+    is CardException.BadAuth, is CardException.NeedsAuth -> AppError.IncorrectCvc()
+    is CardException.RateLimited -> AppError.RateLimited()
+    is CardException -> AppError.Generic(this::class.java.simpleName)
+    is DumpException -> AppError.Generic(message ?: this::class.java.simpleName)
+    else -> AppError.Generic(message ?: "Unknown cktap error")
 }
