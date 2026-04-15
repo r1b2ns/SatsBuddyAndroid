@@ -92,48 +92,17 @@ app/src/main/java/com/satsbuddy/
 
 ---
 
-## Publishing `cktap-android` to Maven Local (manual step, for now)
+## `cktap-android` dependency
 
-The `cktap-android` library (Kotlin bindings for [rust-cktap](https://github.com/coinkite/rust-cktap)) is **not yet published to a public Maven repository**. The app consumes it as `org.bitcoindevkit:cktap-android:0.1.0-SNAPSHOT` from your **local Maven repo** (`~/.m2/repository`), so you must build and publish it locally before the app can compile.
+SatsBuddy consumes the Coinkite Tap Protocol bindings as a Maven artifact:
 
-### Prerequisites
-
-- [Rust toolchain](https://rustup.rs/) (`cargo`, `rustup`)
-- Android NDK (installed via Android Studio → SDK Manager → SDK Tools → NDK)
-- The [rust-cktap](https://github.com/coinkite/rust-cktap) repository cloned as a sibling of this project:
-
-```
-parent/
-├── SatsBuddyAndroid/
-└── rust-cktap/
+```kotlin
+implementation("org.bitcoindevkit:cktap-android:0.1.0-SNAPSHOT")
 ```
 
-### Steps
+[`settings.gradle.kts`](settings.gradle.kts) declares `mavenLocal()` before `mavenCentral()`, so Gradle resolves the library from `~/.m2/repository` first and falls back to Maven Central.
 
-1. Export the NDK path (adjust the version to match what you have installed):
-   ```bash
-   export ANDROID_NDK_ROOT=~/Library/Android/sdk/ndk/27.2.12479018
-   ```
-2. Build the native library and generate the Kotlin bindings:
-   ```bash
-   cd ../rust-cktap/cktap-android
-   bash scripts/dev/build-dev-macos-aarch64.sh
-   ```
-   This compiles `libcktap_ffi.so` for `arm64-v8a` and generates `lib/src/main/kotlin/com/coinkite/cktap/cktap_ffi.kt` via UniFFI.
-3. Publish the AAR to your local Maven repository:
-   ```bash
-   ./gradlew :lib:publishToMavenLocal
-   ```
-   This installs `org.bitcoindevkit:cktap-android:0.1.0-SNAPSHOT` into `~/.m2/repository`.
-4. Build SatsBuddy normally:
-   ```bash
-   cd ../../SatsBuddyAndroid
-   ./gradlew :app:assembleDebug
-   ```
-
-SatsBuddy's [`settings.gradle.kts`](settings.gradle.kts) declares `mavenLocal()` as a dependency source, so the app will resolve the library directly from `~/.m2/repository`. Repeat step 3 whenever you change the library — Gradle will pick up the refreshed snapshot on the next build.
-
-> Future work: publish `cktap-android` to a public Maven repository (e.g. Maven Central) so this manual step can be removed.
+While `cktap-android` is not yet published on Maven Central, build and publish it locally following the instructions in the [rust-cktap/cktap-android README](https://github.com/notmandatory/rust-cktap/tree/master/cktap-android#how-to-publish-to-your-local-maven-repository).
 
 ---
 
