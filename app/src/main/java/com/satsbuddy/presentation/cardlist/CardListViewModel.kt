@@ -55,6 +55,10 @@ class CardListViewModel @Inject constructor(
         }
     }
 
+    fun refreshCards() {
+        loadPersistedCards()
+    }
+
     private fun observeNfcTags() {
         viewModelScope.launch {
             nfcSessionManager.tagFlow.collect { tag ->

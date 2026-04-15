@@ -4,8 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.satsbuddy.domain.model.SatsCardInfo
-import com.satsbuddy.domain.model.SlotInfo
 import com.satsbuddy.domain.usecase.GetBalanceUseCase
+import com.satsbuddy.domain.usecase.LoadCardsUseCase
+import com.satsbuddy.domain.usecase.SaveCardsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CardDetailViewModel @Inject constructor(
     private val getBalance: GetBalanceUseCase,
+    private val loadCards: LoadCardsUseCase,
+    private val saveCards: SaveCardsUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -26,7 +29,31 @@ class CardDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(CardDetailUiState())
     val uiState: StateFlow<CardDetailUiState> = _uiState.asStateFlow()
 
+    private var cachedCards: List<SatsCardInfo> = emptyList()
     private var fetchToken: String = ""
+
+    init {
+        loadCard()
+    }
+
+    private fun loadCard() {
+        viewModelScope.launch {
+            loadCards().onSuccess { cards ->
+                cachedCards = cards
+                val card = cards.firstOrNull { it.cardIdentifier == cardIdentifier }
+                if (card != null) {
+                    _uiState.update {
+                        it.copy(
+                            displayName = card.displayName,
+                            label = card.label,
+                            slots = card.slots
+                        )
+                    }
+                    loadSlotDetails(card)
+                }
+            }
+        }
+    }
 
     fun loadSlotDetails(card: SatsCardInfo) {
         val token = UUID.randomUUID().toString()
@@ -58,5 +85,23 @@ class CardDetailViewModel @Inject constructor(
                 _uiState.update { it.copy(slots = slots, isLoading = false) }
             }
         }
+    }
+
+    fun updateLabel(newLabel: String) {
+        val normalized = newLabel.trim().ifBlank { null }
+        val updatedCards = cachedCards.map {
+            if (it.cardIdentifier == cardIdentifier) it.copy(label = normalized) else it
+        }
+        cachedCards = updatedCards
+        val updatedCard = updatedCards.firstOrNull { it.cardIdentifier == cardIdentifier }
+        if (updatedCard != null) {
+            _uiState.update {
+                it.copy(
+                    displayName = updatedCard.displayName,
+                    label = updatedCard.label
+                )
+            }
+        }
+        viewModelScope.launch { saveCards(updatedCards) }
     }
 }
