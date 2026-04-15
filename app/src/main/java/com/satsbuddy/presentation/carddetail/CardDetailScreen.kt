@@ -108,7 +108,7 @@ fun CardDetailScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.Start
         ) {
             Spacer(Modifier.height(24.dp))
 
@@ -125,21 +125,21 @@ fun CardDetailScreen(
                     onFormatToggle = { balanceFormat = balanceFormat.next() }
                 )
                 Spacer(Modifier.height(8.dp))
+
+                Button(
+                    onClick = { onNavigateToSend(viewModel.cardIdentifier, slot.slotNumber) },
+                    enabled = (slot.balance ?: 0) > 0 && displayAddress != null,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Sweep Balance")
+                }
             }
 
             uiState.errorMessage?.let { error ->
                 Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.height(8.dp))
-            }
-
-            if (activeSlot != null && (activeSlot.balance ?: 0) > 0 && displayAddress != null) {
-                Button(
-                    onClick = { onNavigateToSend(viewModel.cardIdentifier, activeSlot.slotNumber) },
-                    modifier = Modifier.padding(vertical = 8.dp)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
-                    Text("  Sweep Balance")
-                }
             }
 
             Spacer(Modifier.height(24.dp))
