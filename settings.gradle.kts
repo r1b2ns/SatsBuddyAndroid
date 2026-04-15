@@ -9,6 +9,7 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        mavenLocal()
         google()
         mavenCentral()
     }
@@ -16,6 +17,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "SatsBuddy"
 include(":app")
-
-include(":cktap-android")
-project(":cktap-android").projectDir = file("../rust-cktap/cktap-android/lib")

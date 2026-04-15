@@ -92,9 +92,9 @@ app/src/main/java/com/satsbuddy/
 
 ---
 
-## Building `cktap-android` (manual step, for now)
+## Publishing `cktap-android` to Maven Local (manual step, for now)
 
-The `cktap-android` library (Kotlin bindings for [rust-cktap](https://github.com/coinkite/rust-cktap)) is **not yet published to a Maven repository**, so it must be built locally before the app can compile.
+The `cktap-android` library (Kotlin bindings for [rust-cktap](https://github.com/coinkite/rust-cktap)) is **not yet published to a public Maven repository**. The app consumes it as `org.bitcoindevkit:cktap-android:0.1.0-SNAPSHOT` from your **local Maven repo** (`~/.m2/repository`), so you must build and publish it locally before the app can compile.
 
 ### Prerequisites
 
@@ -120,15 +120,20 @@ parent/
    bash scripts/dev/build-dev-macos-aarch64.sh
    ```
    This compiles `libcktap_ffi.so` for `arm64-v8a` and generates `lib/src/main/kotlin/com/coinkite/cktap/cktap_ffi.kt` via UniFFI.
-3. Build SatsBuddy normally:
+3. Publish the AAR to your local Maven repository:
+   ```bash
+   ./gradlew :lib:publishToMavenLocal
+   ```
+   This installs `org.bitcoindevkit:cktap-android:0.1.0-SNAPSHOT` into `~/.m2/repository`.
+4. Build SatsBuddy normally:
    ```bash
    cd ../../SatsBuddyAndroid
    ./gradlew :app:assembleDebug
    ```
 
-The `cktap-android` module is wired as a Gradle sibling project (see `settings.gradle.kts`), so rebuilding it locally is enough — no extra publish step is required.
+SatsBuddy's [`settings.gradle.kts`](settings.gradle.kts) declares `mavenLocal()` as a dependency source, so the app will resolve the library directly from `~/.m2/repository`. Repeat step 3 whenever you change the library — Gradle will pick up the refreshed snapshot on the next build.
 
-> Future work: publish `cktap-android` to a Maven repository so this manual step can be removed.
+> Future work: publish `cktap-android` to a public Maven repository (e.g. Maven Central) so this manual step can be removed.
 
 ---
 

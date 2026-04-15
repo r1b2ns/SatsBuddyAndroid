@@ -36,8 +36,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     buildFeatures {
@@ -66,8 +68,8 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.8.5")
 
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.53.1")
-    ksp("com.google.dagger:hilt-compiler:2.53.1")
+    implementation("com.google.dagger:hilt-android:2.58")
+    ksp("com.google.dagger:hilt-compiler:2.58")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     // Networking
@@ -100,7 +102,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
 
     // Coinkite Tap Protocol (UniFFI bindings + native Rust lib)
-    implementation(project(":cktap-android"))
+    implementation("org.bitcoindevkit:cktap-android:0.1.0-SNAPSHOT")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
