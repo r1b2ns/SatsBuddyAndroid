@@ -2,16 +2,16 @@ package com.satsbuddy.data.nfc
 
 import android.nfc.Tag
 import android.nfc.tech.IsoDep
-import com.coinkite.cktap.CardException
-import com.coinkite.cktap.CkTapCard
-import com.coinkite.cktap.CkTapException
-import com.coinkite.cktap.DumpException
-import com.coinkite.cktap.SatsCard
-import com.coinkite.cktap.SatsCardStatus
-import com.coinkite.cktap.SignPsbtException
-import com.coinkite.cktap.StatusException
-import com.coinkite.cktap.UnsealException
-import com.coinkite.cktap.toCktap
+import org.bitcoindevkit.cktap.CardException
+import org.bitcoindevkit.cktap.CkTapCard
+import org.bitcoindevkit.cktap.CkTapException
+import org.bitcoindevkit.cktap.DumpException
+import org.bitcoindevkit.cktap.SatsCard
+import org.bitcoindevkit.cktap.SatsCardStatus
+import org.bitcoindevkit.cktap.SignPsbtException
+import org.bitcoindevkit.cktap.StatusException
+import org.bitcoindevkit.cktap.UnsealException
+import org.bitcoindevkit.cktap.toCktap
 import com.satsbuddy.domain.model.AppError
 import com.satsbuddy.domain.model.SatsCardInfo
 import com.satsbuddy.domain.model.SlotInfo

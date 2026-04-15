@@ -1,14 +1,14 @@
 package com.satsbuddy.data.nfc
 
 import android.nfc.tech.IsoDep
-import com.coinkite.cktap.CkTransport
+import org.bitcoindevkit.cktap.CkTransport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
  * Bridges Android's [IsoDep] APDU transceive channel to the rust-cktap
  * [CkTransport] interface consumed by the UniFFI bindings in
- * `com.coinkite.cktap`.
+ * `org.bitcoindevkit.cktap`.
  *
  * The underlying [IsoDep] connection is opened lazily on first use and
  * must be explicitly closed via [close] when the NFC session ends.
