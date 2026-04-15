@@ -115,13 +115,18 @@ fun CardListScreen(
                             )
                         }
                     }
-                    items(uiState.cards, key = { it.cardIdentifier }) { card ->
-                        SwipeableCardRow(
-                            card = card,
-                            isLoading = uiState.detailLoadingCardIdentifier == card.cardIdentifier,
-                            onClick = { onCardClick(card.cardIdentifier) },
-                            onSwipedToDelete = { viewModel.requestCardDeletion(card) }
-                        )
+                    if (uiState.cards.isNotEmpty()) {
+                        item(key = "section-satscard") {
+                            CardSectionHeader(title = "SATSCARD")
+                        }
+                        items(uiState.cards, key = { it.cardIdentifier }) { card ->
+                            SwipeableCardRow(
+                                card = card,
+                                isLoading = uiState.detailLoadingCardIdentifier == card.cardIdentifier,
+                                onClick = { onCardClick(card.cardIdentifier) },
+                                onSwipedToDelete = { viewModel.requestCardDeletion(card) }
+                            )
+                        }
                     }
                 }
             }
@@ -147,6 +152,18 @@ fun CardListScreen(
             )
         }
     }
+}
+
+@Composable
+private fun CardSectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp, bottom = 4.dp)
+    )
 }
 
 @Composable
