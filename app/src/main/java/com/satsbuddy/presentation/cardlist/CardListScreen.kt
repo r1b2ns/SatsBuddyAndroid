@@ -109,7 +109,7 @@ fun CardListScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_satscard_logo),
+                        painter = painterResource(R.drawable.ic_satscard_brand_logo),
                         contentDescription = null,
                         tint = SatsCardLogoOrange,
                         modifier = Modifier.height(64.dp)
@@ -334,9 +334,10 @@ private fun CardRowItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                painter = painterResource(R.drawable.ic_satscard_logo),
+                painter = painterResource(R.drawable.ic_satscard_brand_logo),
                 contentDescription = null,
-                tint = SatsCardLogoOrange
+                tint = SatsCardLogoOrange,
+                modifier = Modifier.height(30.dp)
             )
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
