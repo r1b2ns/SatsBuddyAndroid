@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Contactless
-import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.SwipeLeft
 import androidx.compose.material3.AlertDialog
@@ -52,12 +51,17 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.satsbuddy.R
 import com.satsbuddy.domain.model.SatsCardInfo
 import com.satsbuddy.presentation.common.AppBottomSheet
+
+private val SatsCardLogoOrange = Color(0xFFF7931A)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -105,9 +109,9 @@ fun CardListScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        Icons.Default.CreditCard,
+                        painter = painterResource(R.drawable.ic_satscard_logo),
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        tint = SatsCardLogoOrange,
                         modifier = Modifier.height(64.dp)
                     )
                     Spacer(Modifier.height(16.dp))
@@ -329,7 +333,11 @@ private fun CardRowItem(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.CreditCard, contentDescription = null)
+            Icon(
+                painter = painterResource(R.drawable.ic_satscard_logo),
+                contentDescription = null,
+                tint = SatsCardLogoOrange
+            )
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
