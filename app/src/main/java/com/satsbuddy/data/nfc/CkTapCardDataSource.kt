@@ -104,11 +104,16 @@ class CkTapCardDataSource @Inject constructor() {
 
     private suspend fun SatsCard.toSatsCardInfo(): SatsCardInfo {
         val status = status()
-        val slots = buildSlotList(this, status)
+        val fullAddress = if (status.addr != null) {
+            runCatching { address() }.getOrNull()
+        } else {
+            null
+        }
+        val slots = buildSlotList(this, status, fullAddress)
         return SatsCardInfo(
             version = status.ver,
             birth = status.birth.toLong(),
-            address = status.addr,
+            address = fullAddress,
             pubkey = status.pubkey,
             cardIdent = status.cardIdent,
             activeSlot = status.activeSlot.toInt(),
@@ -121,6 +126,7 @@ class CkTapCardDataSource @Inject constructor() {
     private suspend fun buildSlotList(
         card: SatsCard,
         status: SatsCardStatus,
+        activeFullAddress: String?,
     ): List<SlotInfo> {
         val total = status.numSlots.toInt()
         val active = status.activeSlot.toInt()
@@ -134,7 +140,7 @@ class CkTapCardDataSource @Inject constructor() {
                 isActive -> {
                     pubkey = status.pubkey
                     descriptor = null
-                    address = status.addr
+                    address = activeFullAddress
                 }
                 isUsed -> {
                     val dump = runCatching { card.dump(index.toUByte(), null) }.getOrNull()
