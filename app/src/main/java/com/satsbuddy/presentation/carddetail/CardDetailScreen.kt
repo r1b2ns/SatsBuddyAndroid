@@ -1,5 +1,7 @@
 package com.satsbuddy.presentation.carddetail
 
+import android.content.Intent
+import androidx.core.net.toUri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,14 +46,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.satsbuddy.domain.model.BalanceDisplayFormat
 import com.satsbuddy.domain.model.SlotInfo
 import com.satsbuddy.presentation.common.BalanceText
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +77,7 @@ fun CardDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     var balanceFormat by rememberSaveable { mutableStateOf(BalanceDisplayFormat.SATS) }
     val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
     var showRenameDialog by rememberSaveable { mutableStateOf(false) }
 
     val activeSlot = uiState.slots.firstOrNull { it.isActive }
@@ -148,6 +161,7 @@ fun CardDetailScreen(
             if (displayAddress != null) {
                 DetailRow(
                     label = "Receive",
+                    subtitle = displayAddress,
                     icon = { Icon(Icons.Default.QrCode, contentDescription = "Receive") },
                     onClick = { onNavigateToReceive(displayAddress) }
                 )
@@ -157,17 +171,34 @@ fun CardDetailScreen(
             // Card ID Row
             DetailRow(
                 label = "Card ID",
-                subtitle = viewModel.cardIdentifier.take(20) + "...",
+                subtitle = viewModel.cardIdentifier,
                 icon = { Icon(Icons.Default.ContentCopy, contentDescription = "Copy") },
                 onClick = { clipboardManager.setText(AnnotatedString(viewModel.cardIdentifier)) }
             )
             HorizontalDivider()
 
+            if (displayAddress != null) {
+                DetailRow(
+                    label = "Explorer",
+                    subtitle = "mempool.space",
+                    icon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Open in explorer") },
+                    onClick = {
+                        val intent = Intent(
+                            Intent.ACTION_VIEW,
+                            "https://mempool.space/address/$displayAddress".toUri()
+                        )
+                        context.startActivity(intent)
+                    }
+                )
+                HorizontalDivider()
+            }
+
             // Slot Navigation Row
             activeSlot?.let { slot ->
                 val totalSlots = uiState.slots.size
                 DetailRow(
-                    label = "Slot ${slot.displaySlotNumber} of $totalSlots",
+                    label = "Slot",
+                    subtitle = "${slot.displaySlotNumber}/$totalSlots",
                     icon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "View Slots") },
                     onClick = { onNavigateToSlotList(viewModel.cardIdentifier) }
                 )
@@ -176,18 +207,20 @@ fun CardDetailScreen(
 
             // Refresh Row
             DetailRow(
-                label = "Refresh",
+                label = "Card Refresh",
+                subtitle = uiState.lastUpdated?.let { formatTimestamp(it) },
                 icon = { Icon(Icons.Default.Refresh, contentDescription = "Refresh") },
-                onClick = { /* trigger refresh */ }
+                onClick = {
+                /* trigger refresh */
+                }
             )
 
             Spacer(Modifier.height(32.dp))
 
             // Footer
-            Text(
-                "SatsBuddy v1.0.0",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            CardFooter(
+                cardVersion = uiState.cardVersion,
+                modifier = Modifier.fillMaxWidth()
             )
         }
 
@@ -265,5 +298,83 @@ private fun DetailRow(
             }
         }
         IconButton(onClick = onClick) { icon() }
+    }
+}
+
+private val cardRefreshFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm", Locale.getDefault())
+        .withZone(ZoneId.systemDefault())
+
+private fun formatTimestamp(epochMillis: Long): String =
+    cardRefreshFormatter.format(Instant.ofEpochMilli(epochMillis))
+
+private const val SATSBUDDY_VERSION = "1.0 ALPHA 1"
+private const val SATSBUDDY_CITY_DESIGNED = "NASHVILLE"
+private const val SATSBUDDY_CITY_MADE = "RIBEIRÃO PRETO"
+private const val SATSCARD_COUNTRY = "CANADA"
+private val SatsCardCountryColor = Color(0xFFE53935)
+private val SatsBuddyCityColor = Color(0xFF1E88E5)
+
+@Composable
+private fun CardFooter(
+    cardVersion: String,
+    modifier: Modifier = Modifier,
+) {
+    val baseColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+    val satsCardVersion = cardVersion.ifBlank { "—" }
+
+    val satsCardLine = buildAnnotatedString {
+        append("SATSCARD • VERSION ")
+        append(satsCardVersion)
+        append(" • MADE IN ")
+        withStyle(SpanStyle(color = SatsCardCountryColor)) {
+            append(SATSCARD_COUNTRY)
+        }
+    }
+
+    val satsBuddyLine = buildAnnotatedString {
+        append("SATSBUDDY")
+        append(" • DESIGNED IN ")
+        withStyle(SpanStyle(color = SatsBuddyCityColor)) {
+            append(SATSBUDDY_CITY_DESIGNED)
+        }
+    }
+
+    val satsBuddyAndroidLine = buildAnnotatedString {
+        append("SATSBUDDY ANDROID • VERSION ")
+        append(SATSBUDDY_VERSION)
+        append(" • MADE IN ")
+        withStyle(SpanStyle(color = SatsBuddyCityColor)) {
+            append(SATSBUDDY_CITY_MADE)
+        }
+    }
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            text = satsCardLine,
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            color = baseColor,
+            textAlign = TextAlign.Left
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = satsBuddyLine,
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            color = baseColor,
+            textAlign = TextAlign.Left
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = satsBuddyAndroidLine,
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            color = baseColor,
+            textAlign = TextAlign.Left
+        )
     }
 }

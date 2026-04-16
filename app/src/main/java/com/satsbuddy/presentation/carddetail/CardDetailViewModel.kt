@@ -46,7 +46,9 @@ class CardDetailViewModel @Inject constructor(
                         it.copy(
                             displayName = card.displayName,
                             label = card.label,
-                            slots = card.slots
+                            slots = card.slots,
+                            lastUpdated = card.dateScanned,
+                            cardVersion = card.version
                         )
                     }
                     loadSlotDetails(card)
