@@ -7,5 +7,7 @@ data class CardDetailUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val displayName: String = "",
-    val label: String? = null
+    val label: String? = null,
+    val lastUpdated: Long? = null,
+    val cardVersion: String = ""
 )
