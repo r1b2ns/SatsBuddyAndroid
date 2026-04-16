@@ -14,6 +14,12 @@ SatsBuddy lets you manage your SATSCARDs: scan them, view balances, receive Bitc
 
 ---
 
+## Download
+
+Debug build for testing: [apk/debug-v1.0.0.apk](apk/debug-v1.0.0.apk)
+
+---
+
 ## Architecture
 
 The project follows **Clean Architecture** with the **MVVM** pattern, structured in three layers:
