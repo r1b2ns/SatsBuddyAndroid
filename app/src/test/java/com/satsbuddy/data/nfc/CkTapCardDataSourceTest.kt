@@ -88,12 +88,13 @@ class CkTapCardDataSourceTest {
         stubToCktapReturnsSatsCard()
         stubStatus()
         coEvery { satsCard.status() } returns status
+        coEvery { satsCard.address() } returns "bc1qactivefulladdress"
 
         val result = dataSource.readCard(tag)
 
         assertEquals("1.0.0", result.version)
         assertEquals(800000L, result.birth)
-        assertEquals("bc1qactive", result.address)
+        assertEquals("bc1qactivefulladdress", result.address)
         assertEquals("pubkey_abc", result.pubkey)
         assertEquals("ident_123", result.cardIdent)
         assertEquals(0, result.activeSlot)
@@ -114,10 +115,26 @@ class CkTapCardDataSourceTest {
     }
 
     @Test
+    fun `readCard falls back to null address when address() throws`() = runTest {
+        stubToCktapReturnsSatsCard()
+        stubStatus()
+        coEvery { satsCard.status() } returns status
+        coEvery { satsCard.address() } throws RuntimeException("derive failed")
+
+        val result = dataSource.readCard(tag)
+
+        // isActive remains true because status.addr is present
+        assertTrue(result.isActive)
+        assertNull(result.address)
+        assertNull(result.slots[0].address)
+    }
+
+    @Test
     fun `readCard builds slot list with active and used slots`() = runTest {
         stubToCktapReturnsSatsCard()
         stubStatus(activeSlot = 2u, numSlots = 5u)
         coEvery { satsCard.status() } returns status
+        coEvery { satsCard.address() } returns "bc1qactivefulladdress"
 
         // Slot 0 and 1 are used (index < activeSlot), slot 2 is active, 3 and 4 are empty
         val dump0 = SlotDetails("priv0", "pub0", "desc0")
@@ -149,7 +166,7 @@ class CkTapCardDataSourceTest {
         assertTrue(slot2.isActive)
         assertFalse(slot2.isUsed)
         assertEquals("pubkey_abc", slot2.pubkey)
-        assertEquals("bc1qactive", slot2.address)
+        assertEquals("bc1qactivefulladdress", slot2.address)
 
         // Empty slots (3, 4)
         val slot3 = result.slots[3]
