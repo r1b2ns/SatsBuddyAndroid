@@ -130,15 +130,15 @@ fun CardDetailScreen(
                 Spacer(Modifier.height(16.dp))
             }
 
-            activeSlot?.let { slot ->
-                BalanceText(
-                    satAmount = slot.balance ?: 0,
-                    format = balanceFormat,
-                    price = null,
-                    onFormatToggle = { balanceFormat = balanceFormat.next() }
-                )
-                Spacer(Modifier.height(8.dp))
+            BalanceText(
+                satAmount = activeSlot?.balance ?: 0,
+                format = balanceFormat,
+                price = null,
+                onFormatToggle = { balanceFormat = balanceFormat.next() }
+            )
+            Spacer(Modifier.height(8.dp))
 
+            activeSlot?.let { slot ->
                 Button(
                     onClick = { onNavigateToSend(viewModel.cardIdentifier, slot.slotNumber) },
                     enabled = (slot.balance ?: 0) > 0 && displayAddress != null,
@@ -194,11 +194,13 @@ fun CardDetailScreen(
             }
 
             // Slot Navigation Row
-            activeSlot?.let { slot ->
+            if (uiState.slots.isNotEmpty()) {
                 val totalSlots = uiState.slots.size
+                val subtitle = activeSlot?.let { "${it.displaySlotNumber}/$totalSlots" }
+                    ?: "All unsealed"
                 DetailRow(
                     label = "Slot",
-                    subtitle = "${slot.displaySlotNumber}/$totalSlots",
+                    subtitle = subtitle,
                     icon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "View Slots") },
                     onClick = { onNavigateToSlotList(viewModel.cardIdentifier) }
                 )
