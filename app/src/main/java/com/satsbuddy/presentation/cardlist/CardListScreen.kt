@@ -347,9 +347,12 @@ private fun CardRowItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                card.displayActiveSlotNumber?.let { slot ->
+                val slotSubtitle = card.displayActiveSlotNumber?.let {
+                    "Slot $it/${card.totalSlots ?: "?"}"
+                } ?: card.totalSlots?.let { "All $it slots unsealed" }
+                slotSubtitle?.let {
                     Text(
-                        text = "Slot $slot/${card.totalSlots ?: "?"}",
+                        text = it,
                         style = MaterialTheme.typography.bodySmall,
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
