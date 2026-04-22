@@ -12,6 +12,7 @@ import org.bitcoindevkit.cktap.SignPsbtException
 import org.bitcoindevkit.cktap.StatusException
 import org.bitcoindevkit.cktap.UnsealException
 import org.bitcoindevkit.cktap.toCktap
+import com.satsbuddy.data.bitcoin.BdkDataSource
 import com.satsbuddy.domain.model.AppError
 import com.satsbuddy.domain.model.SatsCardInfo
 import com.satsbuddy.domain.model.SlotInfo
@@ -29,7 +30,9 @@ import javax.inject.Singleton
  * transport and the native card handle when it is done.
  */
 @Singleton
-class CkTapCardDataSource @Inject constructor() {
+class CkTapCardDataSource @Inject constructor(
+    private val bdkDataSource: BdkDataSource
+) {
 
     suspend fun readCard(tag: Tag): SatsCardInfo = withContext(Dispatchers.IO) {
         withSatsCard(tag) { card ->
@@ -146,7 +149,9 @@ class CkTapCardDataSource @Inject constructor() {
                     val dump = runCatching { card.dump(index.toUByte(), null) }.getOrNull()
                     pubkey = dump?.pubkey
                     descriptor = dump?.pubkeyDescriptor
-                    address = null
+                    address = descriptor?.takeIf { it.isNotEmpty() }?.let { desc ->
+                        runCatching { bdkDataSource.deriveAddress(desc) }.getOrNull()
+                    }
                 }
                 else -> {
                     pubkey = null

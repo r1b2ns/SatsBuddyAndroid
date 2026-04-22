@@ -10,6 +10,7 @@ import org.bitcoindevkit.cktap.SatsCardStatus
 import org.bitcoindevkit.cktap.SignPsbtException
 import org.bitcoindevkit.cktap.SlotDetails
 import org.bitcoindevkit.cktap.UnsealException
+import com.satsbuddy.data.bitcoin.BdkDataSource
 import com.satsbuddy.domain.model.AppError
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -33,6 +34,7 @@ class CkTapCardDataSourceTest {
     private lateinit var isoDep: IsoDep
     private lateinit var satsCard: SatsCard
     private lateinit var status: SatsCardStatus
+    private lateinit var bdkDataSource: BdkDataSource
 
     @Before
     fun setUp() {
@@ -45,10 +47,12 @@ class CkTapCardDataSourceTest {
         }
         satsCard = mockk(relaxed = true)
         status = mockk(relaxed = true)
+        bdkDataSource = mockk(relaxed = true)
+        coEvery { bdkDataSource.deriveAddress(any(), any()) } returns "bc1qderived"
 
         every { IsoDep.get(tag) } returns isoDep
 
-        dataSource = CkTapCardDataSource()
+        dataSource = CkTapCardDataSource(bdkDataSource)
     }
 
     @After
@@ -153,12 +157,13 @@ class CkTapCardDataSourceTest {
         assertTrue(slot0.isUsed)
         assertEquals("pub0", slot0.pubkey)
         assertEquals("desc0", slot0.pubkeyDescriptor)
-        assertNull(slot0.address)
+        assertEquals("bc1qderived", slot0.address)
 
         val slot1 = result.slots[1]
         assertEquals(1, slot1.slotNumber)
         assertTrue(slot1.isUsed)
         assertEquals("pub1", slot1.pubkey)
+        assertEquals("bc1qderived", slot1.address)
 
         // Active slot (2)
         val slot2 = result.slots[2]
@@ -224,6 +229,50 @@ class CkTapCardDataSourceTest {
         } catch (e: AppError.TransportError) {
             assertEquals("NFC lost", e.message)
         }
+    }
+
+    @Test
+    fun `readCard derives address from descriptor for used slots`() = runTest {
+        stubToCktapReturnsSatsCard()
+        stubStatus(activeSlot = 1u, numSlots = 2u)
+        coEvery { satsCard.status() } returns status
+        coEvery { satsCard.address() } returns "bc1qactive"
+        coEvery { satsCard.dump(0u, null) } returns SlotDetails("priv0", "pub0", "wpkh(pub0)")
+        coEvery { bdkDataSource.deriveAddress("wpkh(pub0)", any()) } returns "bc1qhistorical"
+
+        val result = dataSource.readCard(tag)
+
+        assertEquals("bc1qhistorical", result.slots[0].address)
+        coVerify { bdkDataSource.deriveAddress("wpkh(pub0)", any()) }
+    }
+
+    @Test
+    fun `readCard leaves used slot address null when derive fails`() = runTest {
+        stubToCktapReturnsSatsCard()
+        stubStatus(activeSlot = 1u, numSlots = 2u)
+        coEvery { satsCard.status() } returns status
+        coEvery { satsCard.address() } returns "bc1qactive"
+        coEvery { satsCard.dump(0u, null) } returns SlotDetails("priv0", "pub0", "bad_desc")
+        coEvery { bdkDataSource.deriveAddress("bad_desc", any()) } throws RuntimeException("invalid descriptor")
+
+        val result = dataSource.readCard(tag)
+
+        assertNull(result.slots[0].address)
+        assertEquals("pub0", result.slots[0].pubkey)
+    }
+
+    @Test
+    fun `readCard skips derive when descriptor missing`() = runTest {
+        stubToCktapReturnsSatsCard()
+        stubStatus(activeSlot = 1u, numSlots = 2u)
+        coEvery { satsCard.status() } returns status
+        coEvery { satsCard.address() } returns "bc1qactive"
+        coEvery { satsCard.dump(0u, null) } throws Exception("dump failed")
+
+        val result = dataSource.readCard(tag)
+
+        assertNull(result.slots[0].address)
+        coVerify(exactly = 0) { bdkDataSource.deriveAddress(any(), any()) }
     }
 
     @Test
