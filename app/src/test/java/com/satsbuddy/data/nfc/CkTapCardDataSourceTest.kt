@@ -116,6 +116,27 @@ class CkTapCardDataSourceTest {
 
         assertFalse(result.isActive)
         assertNull(result.address)
+        assertNull(result.activeSlot)
+    }
+
+    @Test
+    fun `readCard marks all slots unsealed when card is fully unsealed`() = runTest {
+        stubToCktapReturnsSatsCard()
+        // Fully unsealed card: addr=null, but cktap still reports last slot index as activeSlot
+        stubStatus(addr = null, activeSlot = 9u, numSlots = 10u)
+        coEvery { satsCard.status() } returns status
+        coEvery { satsCard.dump(any(), null) } answers {
+            SlotDetails("priv", "pub", "wpkh(pub)")
+        }
+
+        val result = dataSource.readCard(tag)
+
+        assertEquals(10, result.slots.size)
+        result.slots.forEach { slot ->
+            assertFalse("slot ${slot.slotNumber} should not be active", slot.isActive)
+            assertTrue("slot ${slot.slotNumber} should be used", slot.isUsed)
+        }
+        assertNull(result.activeSlot)
     }
 
     @Test
