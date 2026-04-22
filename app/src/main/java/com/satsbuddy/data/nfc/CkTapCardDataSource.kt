@@ -119,7 +119,7 @@ class CkTapCardDataSource @Inject constructor(
             address = fullAddress,
             pubkey = status.pubkey,
             cardIdent = status.cardIdent,
-            activeSlot = status.activeSlot.toInt(),
+            activeSlot = status.activeSlot.toInt().takeIf { status.addr != null },
             totalSlots = status.numSlots.toInt(),
             isActive = status.addr != null,
             slots = slots,
@@ -133,9 +133,10 @@ class CkTapCardDataSource @Inject constructor(
     ): List<SlotInfo> {
         val total = status.numSlots.toInt()
         val active = status.activeSlot.toInt()
+        val hasSealedSlot = status.addr != null
         return (0 until total).map { index ->
-            val isActive = index == active
-            val isUsed = index < active
+            val isActive = hasSealedSlot && index == active
+            val isUsed = if (hasSealedSlot) index < active else index <= active
             val pubkey: String?
             val descriptor: String?
             val address: String?
