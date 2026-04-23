@@ -14,12 +14,6 @@ SatsBuddy lets you manage your SATSCARDs: scan them, view balances, receive Bitc
 
 ---
 
-## Download
-
-Debug build for testing: [apk/debug-v1.0.0.apk](apk/debug-v1.0.0.apk)
-
----
-
 ## Screenshots
 
 <p align="center">
@@ -70,34 +64,6 @@ data/           →   Repository implementations + data sources
 ## Bitcoin Dev Kit (BDK)
 
 Transaction building and broadcasting is powered by [Bitcoin Dev Kit](https://bitcoindevkit.org) via the `bdk-android` bindings. BDK handles PSBT construction and wallet descriptor management. Integration is currently in progress (`BdkDataSource`).
-
----
-
-## Project Structure
-
-```
-app/src/main/java/com/satsbuddy/
-├── data/
-│   ├── bitcoin/        # BDK data source
-│   ├── local/          # DataStore + Tink encrypted storage
-│   ├── nfc/            # NFC session manager + rust-cktap transport
-│   ├── remote/         # Mempool.space API + DTOs
-│   └── repository/     # Repository implementations
-├── di/                 # Hilt modules (Network, Repository, Storage)
-├── domain/
-│   ├── model/          # Domain entities + AppError
-│   ├── repository/     # Repository interfaces
-│   └── usecase/        # Business logic use cases
-└── presentation/
-    ├── carddetail/
-    ├── cardlist/
-    ├── navigation/     # Type-safe routes
-    ├── receive/
-    ├── send/           # Multi-step send flow (destination → fee → review → sign)
-    ├── slothistory/
-    ├── slotlist/
-    └── theme/
-```
 
 ---
 
