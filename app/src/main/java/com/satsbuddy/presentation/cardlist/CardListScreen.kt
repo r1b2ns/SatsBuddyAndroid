@@ -1,5 +1,6 @@
 package com.satsbuddy.presentation.cardlist
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -52,10 +53,17 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.satsbuddy.R
 import com.satsbuddy.domain.model.SatsCardInfo
@@ -118,8 +126,11 @@ fun CardListScreen(
                     Text(
                         "Tap + to add your SATSCARD",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
+                    Spacer(Modifier.height(8.dp))
+                    PurchaseSatscardHint()
                 }
             } else {
                 LazyColumn(
@@ -171,6 +182,29 @@ fun CardListScreen(
             )
         }
     }
+}
+
+@Composable
+private fun PurchaseSatscardHint() {
+    val context = LocalContext.current
+    val link = "satscard.com"
+    val text = buildAnnotatedString {
+        append("Purchase a SATSCARD at ")
+        withStyle(
+            SpanStyle(
+                color = MaterialTheme.colorScheme.primary,
+                textDecoration = TextDecoration.Underline
+            )
+        ) { append(link) }
+    }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.clickable {
+            context.startActivity(Intent(Intent.ACTION_VIEW, "https://satscard.com".toUri()))
+        }
+    )
 }
 
 @Composable
