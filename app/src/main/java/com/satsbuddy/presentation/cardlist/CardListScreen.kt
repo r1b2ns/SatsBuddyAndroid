@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -117,10 +118,10 @@ fun CardListScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_satscard_brand_logo),
+                        imageVector = Icons.Default.Contactless,
                         contentDescription = null,
-                        tint = SatsCardLogoOrange,
-                        modifier = Modifier.height(64.dp)
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(64.dp)
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
