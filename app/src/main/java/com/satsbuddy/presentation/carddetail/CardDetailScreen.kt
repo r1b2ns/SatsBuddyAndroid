@@ -65,6 +65,8 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+private const val SWEEP_ENABLED = false
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardDetailScreen(
@@ -138,7 +140,8 @@ fun CardDetailScreen(
             )
             Spacer(Modifier.height(8.dp))
 
-            activeSlot?.let { slot ->
+            @Suppress("ConstantConditionIf")
+            if (SWEEP_ENABLED) activeSlot?.let { slot ->
                 Button(
                     onClick = { onNavigateToSend(viewModel.cardIdentifier, slot.slotNumber) },
                     enabled = (slot.balance ?: 0) > 0 && displayAddress != null,
