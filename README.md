@@ -20,6 +20,17 @@ Debug build for testing: [apk/debug-v1.0.0.apk](apk/debug-v1.0.0.apk)
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/01.png" alt="Card list" width="22%" />
+  <img src="screenshots/01.2.png" alt="NFC scan bottom sheet" width="22%" />
+  <img src="screenshots/02.png" alt="Card detail" width="22%" />
+  <img src="screenshots/03.png" alt="All slots" width="22%" />
+</p>
+
+---
+
 ## Architecture
 
 The project follows **Clean Architecture** with the **MVVM** pattern, structured in three layers:
