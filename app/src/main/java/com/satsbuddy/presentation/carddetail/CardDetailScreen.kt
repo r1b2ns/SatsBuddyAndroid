@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Contactless
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.QrCode
@@ -60,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.satsbuddy.domain.model.BalanceDisplayFormat
 import com.satsbuddy.domain.model.SlotInfo
+import com.satsbuddy.presentation.common.AppBottomSheet
 import com.satsbuddy.presentation.common.BalanceText
 import java.time.Instant
 import java.time.ZoneId
@@ -216,9 +218,7 @@ fun CardDetailScreen(
                 label = "Card Refresh",
                 subtitle = uiState.lastUpdated?.let { formatTimestamp(it) },
                 icon = { Icon(Icons.Default.Refresh, contentDescription = "Refresh") },
-                onClick = {
-                /* trigger refresh */
-                }
+                onClick = { viewModel.beginRefreshScan() }
             )
 
             Spacer(Modifier.height(32.dp))
@@ -238,6 +238,17 @@ fun CardDetailScreen(
                     showRenameDialog = false
                 },
                 onDismiss = { showRenameDialog = false }
+            )
+        }
+
+        if (uiState.isScanning) {
+            AppBottomSheet(
+                image = Icons.Default.Contactless,
+                title = "Wait",
+                subtitle = "Hold phone near SATSCARD",
+                titlePrimaryButton = "Cancel",
+                primaryButtonAction = { viewModel.cancelRefreshScan() },
+                onDismissRequest = { viewModel.cancelRefreshScan() }
             )
         }
     }

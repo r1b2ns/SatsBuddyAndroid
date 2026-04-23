@@ -3,10 +3,13 @@ package com.satsbuddy.presentation.carddetail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.satsbuddy.data.nfc.NfcSessionManager
 import com.satsbuddy.domain.model.SatsCardInfo
 import com.satsbuddy.domain.usecase.GetBalanceUseCase
 import com.satsbuddy.domain.usecase.LoadCardsUseCase
+import com.satsbuddy.domain.usecase.ReadCardInfoUseCase
 import com.satsbuddy.domain.usecase.SaveCardsUseCase
+import com.satsbuddy.domain.usecase.UpsertCardUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +24,9 @@ class CardDetailViewModel @Inject constructor(
     private val getBalance: GetBalanceUseCase,
     private val loadCards: LoadCardsUseCase,
     private val saveCards: SaveCardsUseCase,
+    private val readCardInfo: ReadCardInfoUseCase,
+    private val upsertCard: UpsertCardUseCase,
+    private val nfcSessionManager: NfcSessionManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -34,6 +40,7 @@ class CardDetailViewModel @Inject constructor(
 
     init {
         loadCard()
+        observeNfcTags()
     }
 
     private fun loadCard() {
@@ -105,5 +112,58 @@ class CardDetailViewModel @Inject constructor(
             }
         }
         viewModelScope.launch { saveCards(updatedCards) }
+    }
+
+    fun beginRefreshScan() {
+        _uiState.update { it.copy(isScanning = true, errorMessage = null) }
+    }
+
+    fun cancelRefreshScan() {
+        _uiState.update { it.copy(isScanning = false) }
+    }
+
+    private fun observeNfcTags() {
+        viewModelScope.launch {
+            nfcSessionManager.tagFlow.collect { tag ->
+                if (!_uiState.value.isScanning) return@collect
+                readCardInfo(tag)
+                    .onSuccess { scanned ->
+                        if (scanned.cardIdentifier != cardIdentifier) {
+                            _uiState.update {
+                                it.copy(
+                                    isScanning = false,
+                                    errorMessage = "Scanned card does not match this card."
+                                )
+                            }
+                            return@onSuccess
+                        }
+                        val existing = cachedCards.firstOrNull { it.cardIdentifier == cardIdentifier }
+                        val refreshed = scanned.copy(label = existing?.label ?: scanned.label)
+                        val (updatedCards, _) = upsertCard(cachedCards, refreshed)
+                        cachedCards = updatedCards
+                        saveCards(updatedCards)
+                        _uiState.update {
+                            it.copy(
+                                isScanning = false,
+                                errorMessage = null,
+                                displayName = refreshed.displayName,
+                                label = refreshed.label,
+                                slots = refreshed.slots,
+                                lastUpdated = refreshed.dateScanned,
+                                cardVersion = refreshed.version
+                            )
+                        }
+                        loadSlotDetails(refreshed)
+                    }
+                    .onFailure { error ->
+                        _uiState.update {
+                            it.copy(
+                                isScanning = false,
+                                errorMessage = error.message
+                            )
+                        }
+                    }
+            }
+        }
     }
 }
