@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
@@ -184,7 +185,7 @@ fun CardDetailScreen(
                 DetailRow(
                     label = "Explorer",
                     subtitle = "mempool.space",
-                    icon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Open in explorer") },
+                    icon = { Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open in explorer") },
                     onClick = {
                         val intent = Intent(
                             Intent.ACTION_VIEW,
@@ -281,13 +282,8 @@ private fun DetailRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp)
-            .then(
-                Modifier.let {
-                    @Suppress("DEPRECATION")
-                    it
-                }
-            ),
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -302,7 +298,7 @@ private fun DetailRow(
                 )
             }
         }
-        IconButton(onClick = onClick) { icon() }
+        icon()
     }
 }
 
